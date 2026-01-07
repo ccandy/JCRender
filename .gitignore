@@ -1,0 +1,24 @@
+# build outputs
+build/
+out/
+
+# macOS
+.DS_Store
+
+# VS Code (你可以按需保留/忽略)
+.vscode/
+
+# CMake generated
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+compile_commands.json
+
+# binaries
+*.dSYM/
+*.o
+*.a
+*.so
+*.dylib
+*.exe
