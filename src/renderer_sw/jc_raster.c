@@ -58,3 +58,17 @@ static inline int32_t jc_imax_i32(int32_t a, int32_t b)
 {
     return a > b ? a:b;
 }
+
+
+//Edge function: E(a,b,p) = (p.x - a.x) * (b.y - a.y) - (p.y - a.y ) * (b.x - a.x)
+static inline int64_t jc_edge_i64(JC_V2I a, JC_V2I b, JC_V2I p)
+{
+    int64_t pax = (int64_t)p.x - (int64_t)a.x;
+    int64_t bay = (int64_t)b.y - (int64_t)a.y;
+
+    int64_t pay = (int64_t)p.y - (int64_t)a.y;
+    int64_t bax = (int64_t)b.x - (int64_t)a.x;
+
+    return pax * bay - pay * bax;
+}
+
