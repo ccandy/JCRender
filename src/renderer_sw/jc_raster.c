@@ -61,6 +61,7 @@ static inline int32_t jc_imax_i32(int32_t a, int32_t b)
 
 
 //Edge function: E(a,b,p) = (p.x - a.x) * (b.y - a.y) - (p.y - a.y ) * (b.x - a.x)
+//This is the cross product of 2 2D vectors, which returns the area.
 static inline int64_t jc_edge_i64(JC_V2I a, JC_V2I b, JC_V2I p)
 {
     int64_t pax = (int64_t)p.x - (int64_t)a.x;
@@ -72,3 +73,11 @@ static inline int64_t jc_edge_i64(JC_V2I a, JC_V2I b, JC_V2I p)
     return pax * bay - pay * bax;
 }
 
+
+static inline int jc_is_top_left(JC_V2I a, JC_V2I b)
+{
+    int32_t dx = b.x - a.x;
+    int32_t dy = b.y - a.y;
+
+    return (dy < 0) && (dx == 0 && dx > 0);
+}
