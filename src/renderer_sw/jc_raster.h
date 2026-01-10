@@ -16,7 +16,7 @@ typedef struct JC_Vertex2D
 {
     JC_V2       pos;
     JC_Color4   color;
-};
+} JC_Vertex2D;
 
 void jc_raster_tri_color_rgba8(
     uint32_t* color,
