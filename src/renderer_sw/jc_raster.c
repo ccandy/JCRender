@@ -26,29 +26,6 @@ static inline JC_V2I jc_v2i_from_v2(JC_V2 v)
     return o;
 }
 
-static inline float jc_clamp01(float x)
-{
-    if (x < 0.0f) return 0.0f;
-    if (x > 1.0f) return 1.0f;
-
-    return x;
-}
-
-static inline uint32_t jc_pack_rgba8(float r, float g, float b, float a)
-{
-    r = jc_clamp01(r);
-    g = jc_clamp01(g);
-    b = jc_clamp01(b);
-    a = jc_clamp01(a);
-
-    uint32_t R = (uint32_t) lrint(r * 255.0f);
-    uint32_t G = (uint32_t) lrint(g * 255.0f);
-    uint32_t B = (uint32_t) lrint(b * 255.0f);
-    uint32_t A = (uint32_t) lrint(b * 255.0f);
-
-    return R | (G << 8) | (B << 16) | (A << 24);
-}
-
 static inline int32_t jc_imin_i32(int32_t a, int32_t b)
 {
     return a < b ? a:b;
@@ -79,7 +56,7 @@ static inline int jc_is_top_left(JC_V2I a, JC_V2I b)
     int32_t dx = b.x - a.x;
     int32_t dy = b.y - a.y;
 
-    return (dy < 0) && (dx == 0 && dx > 0);
+    return (dy < 0) || (dx == 0 && dx > 0);
 }
 
 static inline int jc_inside_edge(int64_t e, int top_left)
@@ -134,16 +111,16 @@ void jc_raster_tri_color_rgba8(
     const int maxy_fp = jc_imax_i32(v0.y, jc_imax_i32(v1.y, v2.y));
     
     //solve for x
-    int32_t minx = (minx_fp - JC_FP_HALF + (JC_FP_ONE - 1)) >> JC_FP_ONE;
-    int32_t maxx = (maxx_fp - JC_FP_HALF) >> JC_FP_ONE;
-    int32_t miny = (miny_fp - JC_FP_HALF + (JC_FP_ONE - 1)) >> JC_FP_ONE;
-    int32_t maxy = (maxy_fp - JC_FP_HALF) >> JC_FP_ONE;
+    int32_t minx = (minx_fp - JC_FP_HALF + (JC_FP_ONE - 1)) >> JC_FP_SHIFT;
+    int32_t maxx = (maxx_fp - JC_FP_HALF) >> JC_FP_SHIFT;
+    int32_t miny = (miny_fp - JC_FP_HALF + (JC_FP_ONE - 1)) >> JC_FP_SHIFT;
+    int32_t maxy = (maxy_fp - JC_FP_HALF) >> JC_FP_SHIFT;
 
     //clip to framebuffer
     if(minx < 0) minx = 0;
     if(miny < 0) miny = 0;
     if(maxx > (int32_t) width - 1)  maxx = (int32_t) width - 1;
-    if(maxx > (int32_t) height - 1) maxx = (int32_t) height - 1;
+    if(maxy > (int32_t) height - 1) maxy = (int32_t) height - 1;
 
     if(minx > maxx || miny > maxy)
     {
@@ -185,7 +162,7 @@ void jc_raster_tri_color_rgba8(
         int64_t w1 = w1_row;
         int64_t w2 = w2_row;
 
-        const row = j * width;
+        const int row = j * width;
 
         for(int i = (int) minx; i < (int)maxx; i++)
         {
