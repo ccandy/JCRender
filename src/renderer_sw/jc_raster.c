@@ -81,3 +81,55 @@ static inline int jc_is_top_left(JC_V2I a, JC_V2I b)
 
     return (dy < 0) && (dx == 0 && dx > 0);
 }
+
+void jc_raster_tri_color_rgba8(
+    uint32_t* color,
+    int width,
+    int height,
+    JC_Vertex2D v0f,
+    JC_Vertex2D v1f,
+    JC_Vertex2D v2f
+){
+    assert(color);
+    assert(width > 0 && height > 0);
+
+    //Convert to fixed-point
+    JC_V2I v0 = jc_v2i_from_v2(v0f.pos);
+    JC_V2I v1 = jc_v2i_from_v2(v1f.pos);
+    JC_V2I v2 = jc_v2i_from_v2(v2f.pos);
+
+    int64_t area = jc_edge_i64(v0, v1, v2);
+    if(area == 0)
+    {
+        return;
+    }
+    //if area < 0, swap v1 and v2
+    if(area < 0)
+    {
+        JC_V2I temp         = v1;
+        v1                  = v2;
+        v2                  = temp;
+        
+        JC_Vertex2D tmpf    = v1f; 
+        v1f                 = v2f; 
+        v2f                 = tmpf;
+
+        area                = - area;
+    }
+
+    //top left flags
+    const int tl0   = jc_is_top_left(v1, v2);
+    const int tl1   = jc_is_top_left(v2, v0);
+    const int tl2   = jc_is_top_left(v0, v1);
+
+    //bounding box
+    const int minx_fp = jc_imin_i32(v0.x, jc_imin_i32(v1.x, v2.x));
+    const int miny_fp = jc_imin_i32(v0.y, jc_imin_i32(v1.y, v2.y));
+    const int maxx_fp = jc_imax_i32(v0.x, jc_imax_i32(v1.x, v2.x));
+    const int maxy_fp = jc_imax_i32(v0.y, jc_imax_i32(v1.y, v2.y));
+    
+    
+
+
+}
+
