@@ -61,7 +61,7 @@ static inline int32_t jc_imax_i32(int32_t a, int32_t b)
 
 
 //Edge function: E(a,b,p) = (p.x - a.x) * (b.y - a.y) - (p.y - a.y ) * (b.x - a.x)
-//This is the cross product of 2 2D vectors, which returns the area.
+//This is the cross product of two 2D vectors, which returns the area.
 static inline int64_t jc_edge_i64(JC_V2I a, JC_V2I b, JC_V2I p)
 {
     int64_t pax = (int64_t)p.x - (int64_t)a.x;
@@ -80,6 +80,11 @@ static inline int jc_is_top_left(JC_V2I a, JC_V2I b)
     int32_t dy = b.y - a.y;
 
     return (dy < 0) && (dx == 0 && dx > 0);
+}
+
+static inline int jc_inside_edge(int64_t e, int top_left)
+{
+    return (e > 0) || (e == 0 && top_left);
 }
 
 void jc_raster_tri_color_rgba8(
@@ -128,8 +133,86 @@ void jc_raster_tri_color_rgba8(
     const int maxx_fp = jc_imax_i32(v0.x, jc_imax_i32(v1.x, v2.x));
     const int maxy_fp = jc_imax_i32(v0.y, jc_imax_i32(v1.y, v2.y));
     
-    
+    //solve for x
+    int32_t minx = (minx_fp - JC_FP_HALF + (JC_FP_ONE - 1)) >> JC_FP_ONE;
+    int32_t maxx = (maxx_fp - JC_FP_HALF) >> JC_FP_ONE;
+    int32_t miny = (miny_fp - JC_FP_HALF + (JC_FP_ONE - 1)) >> JC_FP_ONE;
+    int32_t maxy = (maxy_fp - JC_FP_HALF) >> JC_FP_ONE;
+
+    //clip to framebuffer
+    if(minx < 0) minx = 0;
+    if(miny < 0) miny = 0;
+    if(maxx > (int32_t) width - 1)  maxx = (int32_t) width - 1;
+    if(maxx > (int32_t) height - 1) maxx = (int32_t) height - 1;
+
+    if(minx > maxx || miny > maxy)
+    {
+        return;
+    }
+
+    //edges
+    const int32_t e0_dx = v2.x - v1.x;
+    const int32_t e0_dy = v2.y - v1.y;
+    const int32_t e1_dx = v0.x - v2.x;
+    const int32_t e1_dy = v0.y - v2.y;
+    const int32_t e2_dx = v1.x - v0.x;
+    const int32_t e2_dy = v1.y - v0.y;
+
+    //steps
+    const int64_t e0_step_x = (int64_t) e0_dy * (int64_t) JC_FP_ONE;
+    const int64_t e1_step_x = (int64_t) e1_dy * (int64_t) JC_FP_ONE;
+    const int64_t e2_step_x = (int64_t) e2_dy * (int64_t) JC_FP_ONE;
+
+    const int64_t e0_step_y = -(int64_t) e0_dx * (int64_t) JC_FP_ONE;
+    const int64_t e1_step_y = -(int64_t) e1_dx * (int64_t) JC_FP_ONE;
+    const int64_t e2_step_y = -(int64_t) e2_dx * (int64_t) JC_FP_ONE;
+
+    JC_V2I p0;
+    p0.x = (minx << JC_FP_SHIFT) + JC_FP_HALF;
+    p0.y = (miny << JC_FP_SHIFT) + JC_FP_HALF;
+
+    //Start Edge
+    int64_t w0_row = jc_edge_i64(v1, v2, p0);
+    int64_t w1_row = jc_edge_i64(v2, v0, p0);
+    int64_t w2_row = jc_edge_i64(v0, v1, p0);
+
+    const float inv_area = 1.0f / (float) area;
+
+    //scan
+    for(int j = (int) miny; j < (int)maxy; j++)
+    {
+        int64_t w0 = w0_row;
+        int64_t w1 = w1_row;
+        int64_t w2 = w2_row;
+
+        const row = j * width;
+
+        for(int i = (int) minx; i < (int)maxx; i++)
+        {
+            if(jc_inside_edge(w0, tl0) && jc_inside_edge(w1, tl1) && jc_inside_edge(w2, tl2))
+            {
+                float a = (float) w0 * inv_area;
+                float b = (float) w1 * inv_area;
+                float c = (float) w2 * inv_area;
+
+                float r = a * v0f.color.r + b * v1f.color.r + c * v2f.color.r;
+                float g = a * v0f.color.g + b * v1f.color.g + c * v2f.color.g;
+                float bb = a * v0f.color.b + b * v1f.color.b + c * v2f.color.b;
+                float aa = a * v0f.color.a + b * v1f.color.a + c * v2f.color.a;
+
+                color[row + i] = jc_pack_rgba8(r, g, bb, aa);
+            }
+
+            w0 += e0_step_x;
+            w1 += e1_step_x;
+            w2 += e2_step_x;
+        }
+        w0_row += e0_step_y;
+        w1_row += e1_step_y;
+        w2_row += e2_step_y;
+    }
 
 
 }
+
 
