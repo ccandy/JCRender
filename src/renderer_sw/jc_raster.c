@@ -56,7 +56,7 @@ static inline int jc_is_top_left(JC_V2I a, JC_V2I b)
     int32_t dx = b.x - a.x;
     int32_t dy = b.y - a.y;
 
-    return (dy < 0) || (dx == 0 && dx > 0);
+    return (dy < 0) || (dy == 0 && dx > 0);
 }
 
 static inline int jc_inside_edge(int64_t e, int top_left)
